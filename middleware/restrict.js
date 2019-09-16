@@ -4,7 +4,7 @@ const Users = require("../users/users-model.js")
 
 module.exports = (req, res, next) => {
     let { username, password } = req.headers
-
+    console.log('from middleware', username)
     Users.findBy({ username })
         .first()
         .then(user => {

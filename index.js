@@ -1,7 +1,8 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const server = express();
-
+server.use(express.json())
+const Users = require("./users/users-model.js")
 const restricted = require("./middleware/restrict.js")
 
 server.get("/", (req, res) => {
@@ -9,7 +10,9 @@ server.get("/", (req, res) => {
 })
 
 server.post("/api/register", (req, res) => {
+    console.log(req.body)
     let { username, password } = req.body
+
     console.log(username)
     const hash = bcrypt.hashSync(password, 2)
 
