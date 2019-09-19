@@ -1,9 +1,11 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const server = express()
 const cors = require("cors")
 
 const Users = require("./users/users-model.js")
-const restricted = require("./middleware/restrict.js")
+const passwordHash = require("./middlewares/password-hash.js")
+const sessionCookie = require("./middlewares/session-cookie.js")
 const session = require("express-session")
 
 
@@ -15,13 +17,21 @@ const sessionConfig = {
         secure: false,
         httpOnly: true
     },
-    resave: false,
-    saveUninitialized: true
+    resave: false, // resave cookie on changes -Luis
+    saveUninitialized: true // GDPR Complince, to show the new users if they want to save the cookie or not!
 }
 
 server.use(express.json())
-server.use(session(sessionConfig))
-
+server.use(session(sessionConfig)) // session config should be an Object!
+server.use(
+    cors({
+        origin: "http://localhost:8000",
+        methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+        preflightContinue: false,
+        optionsSuccessStatus: 204,
+        credentials: true
+    })
+);
 
 server.get("/", (req, res) => {
     res.send("It's alive!")
@@ -70,13 +80,34 @@ server.post("/api/login", (req, res) => {
         })
 })
 
-server.get("/api/users", restricted, (req, res) => {
+server.get("/api/users", passwordHash, sessionCookie, (req, res) => {
     Users.find()
         .then(users => {
             res.json(users)
         })
         .catch(err => res.send(err))
 })
+
+server.get("/api/logout", (req, res) => {
+    if (req.session) {
+        req.session.destroy(error => {
+            if (error) {
+                res
+                    .status(500)
+                    .json({
+                        message: "You can check out anytime you like, but you can never leave"
+                    })
+            } else {
+                res
+                    .json({ message: "Bye come back soon" })
+            }
+        });
+    } else {
+        res
+            .json({ messsage: "already logged out" })
+    }
+})
+
 
 const port = process.env.PORT || 8000;
 
